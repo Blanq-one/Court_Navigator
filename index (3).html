@@ -1,0 +1,807 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Court Navigator (prototype)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#edf1f5; --surface:#ffffff; --surface2:#e2e9f0; --ink:#0f1f33; --muted:#44546a; --line:#b9c6d4;
+  --accent:#1b4fcf; --accent-ink:#ffffff; --accent-soft:#dbe6ff;
+  --mark:#ffd84d; --mark-ink:#2b2100;
+  --ok:#14663a; --ok-soft:#d9f2e3; --warn:#8a4b00; --warn-soft:#ffecc7; --danger:#a01d1d; --danger-soft:#fde0e0;
+  --focus:#0b3bd6; --radius:12px;
+  color-scheme: light;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c131c; --surface:#141e2b; --surface2:#1d2a3a; --ink:#eaf0f7; --muted:#a9b8ca; --line:#33465c;
+    --accent:#7aa2ff; --accent-ink:#06142e; --accent-soft:#1c2c52;
+    --mark:#ffd84d; --mark-ink:#2b2100;
+    --ok:#6fdc9b; --ok-soft:#12301f; --warn:#ffc16b; --warn-soft:#3a2807; --danger:#ff9a9a; --danger-soft:#3b1515;
+    --focus:#9db9ff; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c131c; --surface:#141e2b; --surface2:#1d2a3a; --ink:#eaf0f7; --muted:#a9b8ca; --line:#33465c;
+  --accent:#7aa2ff; --accent-ink:#06142e; --accent-soft:#1c2c52;
+  --mark:#ffd84d; --mark-ink:#2b2100;
+  --ok:#6fdc9b; --ok-soft:#12301f; --warn:#ffc16b; --warn-soft:#3a2807; --danger:#ff9a9a; --danger-soft:#3b1515;
+  --focus:#9db9ff; color-scheme: dark;
+}
+html:root[data-contrast="high"]{
+  --bg:#000; --surface:#000; --surface2:#111; --ink:#fff; --muted:#fff; --line:#fff;
+  --accent:#ffe600; --accent-ink:#000; --accent-soft:#1a1a00; --mark:#ffe600; --mark-ink:#000;
+  --ok:#7dff9e; --ok-soft:#001a08; --warn:#ffd24d; --warn-soft:#1a1200; --danger:#ff8a8a; --danger-soft:#1a0000;
+  --focus:#00e5ff; color-scheme: dark;
+}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 1rem);font-size:100%}
+html[data-size="2"]{font-size:118%}
+html[data-size="3"]{font-size:138%}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;font-size:1.0625rem;line-height:1.6}
+h1,h2,h3{line-height:1.2;margin:0 0 .5rem;font-weight:700;letter-spacing:-.01em}
+h1{font-size:clamp(1.8rem,5vw,2.6rem)}
+h2{font-size:1.5rem}
+h3{font-size:1.15rem}
+p{margin:0 0 .85rem;max-width:68ch}
+a{color:var(--accent);text-underline-offset:.2em}
+:focus-visible{outline:3px solid var(--focus);outline-offset:3px;border-radius:6px}
+.skip{position:absolute;left:-999px;top:0;background:var(--mark);color:var(--mark-ink);padding:.75rem 1rem;z-index:50;font-weight:700}
+.skip:focus{left:.5rem;top:.5rem}
+.wrap{max-width:1040px;margin:0 auto;padding:0 1rem}
+
+/* prototype banner and toolbar */
+.proto{background:var(--mark);color:var(--mark-ink);font-size:.92rem;padding:.55rem 0}
+.proto .wrap{display:flex;gap:.6rem;align-items:flex-start}
+.proto strong{white-space:nowrap}
+.toolbar{background:var(--surface2);border-bottom:1px solid var(--line);padding:.5rem 0}
+.toolbar .wrap{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;justify-content:space-between}
+.tools{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center}
+.tools .lbl{font-size:.9rem;color:var(--muted);margin-right:.2rem}
+
+.btn{font:inherit;font-weight:700;min-height:44px;min-width:44px;padding:.55rem 1rem;border-radius:10px;border:2px solid var(--ink);background:var(--surface);color:var(--ink);cursor:pointer}
+.btn:hover{background:var(--surface2)}
+.btn[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.quiet{border-color:var(--line);font-weight:400}
+.btn.small{min-height:40px;padding:.35rem .8rem;font-size:.95rem}
+
+header.site{padding:1.6rem 0 1rem}
+.brand{display:flex;align-items:center;gap:.7rem;margin-bottom:1rem}
+.brand .mark{width:46px;height:46px;border-radius:12px;background:var(--ink);color:var(--surface);display:grid;place-items:center;font-weight:700;font-size:1.35rem}
+.brand b{font-size:1.25rem}
+.brand span{display:block;font-size:.92rem;color:var(--muted)}
+nav.main{display:flex;flex-wrap:wrap;gap:.4rem}
+nav.main a{display:inline-flex;align-items:center;min-height:44px;padding:.4rem 1rem;border-radius:999px;border:2px solid var(--line);background:var(--surface);color:var(--ink);text-decoration:none;font-weight:700}
+nav.main a[aria-current="page"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+nav.main a.staff{margin-left:auto;border-style:dashed}
+
+main{padding:.5rem 0 3rem}
+.view>.intro{margin-bottom:1.4rem}
+.lede{font-size:1.2rem;color:var(--muted)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1.2rem}
+.panel+.panel{margin-top:1rem}
+.notice{display:flex;gap:.7rem;border-radius:var(--radius);padding:.9rem 1rem;background:var(--warn-soft);color:var(--ink);border:1px solid var(--warn);margin:0 0 1.2rem}
+.notice.info{background:var(--accent-soft);border-color:var(--accent)}
+.notice.ok{background:var(--ok-soft);border-color:var(--ok)}
+.notice.bad{background:var(--danger-soft);border-color:var(--danger)}
+.notice p{margin:0}
+.src{display:inline-block;font-size:.8rem;font-weight:700;padding:0 .45rem;border-radius:6px;background:var(--accent-soft);color:var(--ink);border:1px solid var(--accent);text-decoration:none;margin-left:.25rem;vertical-align:.1em}
+.tag{display:inline-block;font-size:.85rem;font-weight:700;padding:.1rem .6rem;border-radius:999px;border:1px solid var(--line);background:var(--surface2)}
+.tag.ok{background:var(--ok-soft);border-color:var(--ok);color:var(--ink)}
+.tag.warn{background:var(--warn-soft);border-color:var(--warn);color:var(--ink)}
+.tag.bad{background:var(--danger-soft);border-color:var(--danger);color:var(--ink)}
+
+/* learn */
+.search{display:flex;gap:.5rem;margin:0 0 1rem}
+input[type=text],input[type=tel],input[type=date],input[type=search]{font:inherit;min-height:48px;padding:.5rem .8rem;border-radius:10px;border:2px solid var(--ink);background:var(--surface);color:var(--ink);width:100%}
+label.field{display:block;font-weight:700;margin:0 0 .3rem}
+.hint{color:var(--muted);font-size:.95rem;margin:.2rem 0 .8rem}
+details.topic{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);margin:0 0 .6rem}
+details.topic>summary{cursor:pointer;list-style:none;padding:1rem 1.1rem;font-weight:700;font-size:1.1rem;display:flex;gap:.8rem;justify-content:space-between;align-items:center;min-height:56px}
+details.topic>summary::-webkit-details-marker{display:none}
+details.topic>summary::after{content:"+";font-size:1.5rem;line-height:1;border:2px solid var(--ink);border-radius:8px;width:34px;height:34px;display:grid;place-items:center;flex:none}
+details.topic[open]>summary::after{content:"−"}
+details.topic .body{padding:0 1.1rem 1.1rem;border-top:1px solid var(--line);padding-top:1rem}
+.cta{display:flex;flex-wrap:wrap;gap:1rem;align-items:center;justify-content:space-between;background:var(--ink);color:var(--surface);border-radius:var(--radius);padding:1.2rem;margin-top:1.4rem}
+.cta h2{margin:0 0 .2rem}
+.cta p{margin:0;color:inherit}
+.cta .btn{border-color:var(--mark);background:var(--mark);color:var(--mark-ink)}
+dl.gloss{display:grid;grid-template-columns:max-content 1fr;gap:.4rem 1.2rem;margin:0}
+dl.gloss dt{font-weight:700}
+dl.gloss dd{margin:0}
+
+/* wizard */
+.progress{display:flex;gap:.4rem;margin:0 0 1rem}
+.progress i{flex:1;height:8px;border-radius:99px;background:var(--line)}
+.progress i.on{background:var(--accent)}
+fieldset{border:0;padding:0;margin:0 0 1rem}
+legend{font-weight:700;font-size:1.2rem;padding:0;margin-bottom:.6rem}
+.opt{display:flex;gap:.8rem;align-items:flex-start;padding:.8rem 1rem;border:2px solid var(--line);border-radius:10px;margin:0 0 .5rem;cursor:pointer;background:var(--surface);min-height:56px}
+.opt:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.opt input{width:24px;height:24px;margin:.15rem 0 0;flex:none;accent-color:var(--accent)}
+.row{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1rem}
+
+/* hearing stub: the one memorable element */
+.stub{display:grid;grid-template-columns:1fr auto;background:var(--surface);border:2px solid var(--ink);border-radius:var(--radius);margin:0 0 1rem;overflow:hidden}
+.stub .l{padding:1rem 1.2rem}
+.stub .r{padding:1rem 1.2rem;border-left:3px dashed var(--ink);background:var(--mark);color:var(--mark-ink);text-align:center;display:flex;flex-direction:column;justify-content:center;min-width:8.5rem}
+.stub .big{font-size:2.6rem;font-weight:700;line-height:1}
+.stub .sm{font-size:.95rem;font-weight:700}
+.stub h3{margin:0 0 .2rem}
+.stub p{margin:0}
+@media (max-width:520px){.stub{grid-template-columns:1fr}.stub .r{border-left:0;border-top:3px dashed var(--ink)}}
+ul.clean,ol.clean{margin:0 0 1rem;padding-left:1.3rem}
+ul.clean li,ol.clean li{margin:.3rem 0;max-width:68ch}
+.checks{list-style:none;padding:0;margin:0}
+.checks li{display:flex;gap:.6rem;align-items:flex-start;padding:.45rem 0;border-bottom:1px solid var(--line)}
+.checks li:last-child{border-bottom:0}
+.dot{flex:none;width:1.4rem;height:1.4rem;border-radius:50%;display:grid;place-items:center;font-size:.85rem;font-weight:700;margin-top:.1rem}
+.dot.y{background:var(--ok);color:var(--surface)}
+.dot.n{border:2px solid var(--muted);color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem}
+
+/* chat */
+.chat{display:grid;grid-template-columns:1fr;gap:1rem}
+#log{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1rem;min-height:320px;max-height:60vh;overflow-y:auto;display:flex;flex-direction:column;gap:.9rem}
+.msg{max-width:min(46rem,92%);padding:.8rem 1rem;border-radius:14px}
+.msg.bot{background:var(--surface2);border:1px solid var(--line);align-self:flex-start}
+.msg.me{background:var(--accent);color:var(--accent-ink);align-self:flex-end}
+.msg p{margin:0 0 .6rem}
+.msg p:last-child{margin-bottom:0}
+.msg .who{font-size:.85rem;font-weight:700;margin-bottom:.2rem;opacity:.85}
+.msg pre{white-space:pre-wrap;font:inherit;background:var(--surface);color:var(--ink);border:1px dashed var(--ink);border-radius:8px;padding:.7rem;margin:.4rem 0}
+.msg .acts{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.5rem;align-items:center}
+.chips{display:flex;flex-wrap:wrap;gap:.45rem}
+.compose{display:flex;gap:.5rem}
+.guard{font-size:.95rem}
+
+/* staff */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.8rem;margin:0 0 1rem}
+.stat{border:1px solid var(--line);border-radius:var(--radius);padding:.8rem 1rem;background:var(--surface)}
+.stat b{display:block;font-size:2rem;line-height:1.1}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th,td{padding:.7rem .8rem;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.95rem;background:var(--surface2)}
+tr.sel td{background:var(--accent-soft)}
+tr:last-child td{border-bottom:0}
+.meter{height:10px;border-radius:99px;background:var(--line);overflow:hidden;min-width:90px}
+.meter i{display:block;height:100%;background:var(--accent)}
+footer.site{border-top:1px solid var(--line);padding:1.4rem 0 2.5rem;color:var(--muted);font-size:.95rem}
+footer ol{padding-left:1.2rem;margin:.4rem 0}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 1rem);background:var(--ink);color:var(--surface);padding:.7rem 1.1rem;border-radius:10px;font-weight:700;z-index:60;max-width:92vw}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+@media (max-width:640px){nav.main a.staff{margin-left:0}.proto .wrap{flex-direction:column;gap:.1rem}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to main content</a>
+
+<div class="proto" role="note">
+  <div class="wrap"><strong>Class prototype.</strong>
+  <span>Nothing is sent or saved anywhere. Texts and reminders are simulated. Assistant answers come from a small set of sample sources that a court would need to approve before real use.</span></div>
+</div>
+
+<div class="toolbar">
+  <div class="wrap">
+    <div class="tools" role="group" aria-label="Display settings">
+      <span class="lbl">Make it easier to read:</span>
+      <button class="btn small" id="sizeDown" type="button" aria-label="Smaller text">A−</button>
+      <button class="btn small" id="sizeUp" type="button" aria-label="Larger text">A+</button>
+      <button class="btn small" id="contrastBtn" type="button" aria-pressed="false">High contrast</button>
+      <button class="btn small" id="themeBtn" type="button" aria-pressed="false">Dark mode</button>
+    </div>
+    <div class="tools" role="group" aria-label="Read aloud">
+      <button class="btn small" id="listenPage" type="button">Listen to this page</button>
+    </div>
+  </div>
+</div>
+
+<header class="site">
+  <div class="wrap">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">CN</div>
+      <div><b>Court Navigator</b><span>Allen County eviction cases, in plain English</span></div>
+    </div>
+    <nav class="main" aria-label="Main">
+      <a href="#learn" data-nav="learn">Learn</a>
+      <a href="#my-case" data-nav="my-case">My case</a>
+      <a href="#ask" data-nav="ask">Ask the assistant</a>
+      <a href="#court" data-nav="court" class="staff">Court staff view</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+<div class="wrap">
+
+<!-- LEARN -->
+<section class="view" id="v-learn" aria-labelledby="h-learn" hidden>
+  <div class="intro">
+    <h1 id="h-learn">Got court papers or a notice? Start here.</h1>
+    <p class="lede">This is the public part. Anyone can read it. No account needed.</p>
+  </div>
+  <div class="notice" role="note"><p><strong>This is information, not legal advice.</strong> It explains what court papers and rules say. For advice about your own situation, talk to free legal help.</p></div>
+  <div class="search">
+    <label for="q" class="field" style="position:absolute;left:-999px">Search topics</label>
+    <input id="q" type="search" placeholder="Search, for example: hearing, notice, miss court" autocomplete="off">
+  </div>
+  <div id="topics"></div>
+  <div class="cta">
+    <div><h2>Want help with your own case?</h2><p>Tell us what you got. Court Navigator will explain what applies to you and remind you about your hearing.</p></div>
+    <a class="btn" href="#my-case" style="text-decoration:none;display:inline-flex;align-items:center">Make it personal</a>
+  </div>
+</section>
+
+<!-- MY CASE -->
+<section class="view" id="v-my-case" aria-labelledby="h-case" hidden>
+  <div class="intro">
+    <h1 id="h-case">My case</h1>
+    <p class="lede">A few questions, one at a time. You can skip anything you don’t know.</p>
+  </div>
+  <div id="caseBody"></div>
+</section>
+
+<!-- ASK -->
+<section class="view" id="v-ask" aria-labelledby="h-ask" hidden>
+  <div class="intro">
+    <h1 id="h-ask">Ask the assistant</h1>
+    <p class="lede" id="askLede">Ask in your own words. Answers come only from court sources, and each one shows which.</p>
+  </div>
+  <div class="notice info guard" role="note"><p><strong>What the assistant will not do:</strong> tell you what to do in your case, predict what a judge will decide, or write legal documents. It explains, reminds, and points you to people who can help.</p></div>
+  <details class="topic" id="demoScript"><summary>Presenting? Demo script</summary><div class="body"><p>Load Jordan’s case, then click these in order. Each one shows a different part of the design.</p><p><button class="btn small primary" type="button" id="loadDemo2">Load Jordan’s demo case</button></p><ol class="clean">
+<li><button class="btn small quiet" type="button" data-q="What’s next for me?">What’s next for me?</button> A personal preparation list built from Jordan’s case.</li>
+<li><button class="btn small quiet" type="button" data-q="What happens at my hearing?">What happens at my hearing?</button> Court sources, plus Jordan’s date and barriers.</li>
+<li><button class="btn small quiet" type="button" data-q="I can’t get off work">I can’t get off work</button> Drafts an employer note with his hearing date.</li>
+<li><button class="btn small quiet" type="button" data-q="I don’t have a ride">I don’t have a ride</button> Names the barrier and the risk of a default.</li>
+<li><button class="btn small quiet" type="button" data-q="I have my ledger">I have my ledger</button> Checks it off. Then open Court staff view and watch the packet update.</li>
+<li><button class="btn small quiet" type="button" data-q="Should I just ignore this?">Should I just ignore this?</button> The legal advice guardrail.</li>
+<li><button class="btn small quiet" type="button" data-q="What is the rule on rent increases?">What is the rule on rent increases?</button> Outside the sources, so it says it doesn’t know.</li>
+</ol></div></details>
+  <div class="chat">
+    <div id="log" role="log" aria-live="polite" aria-label="Conversation"></div>
+    <div class="chips" id="chips" aria-label="Suggested questions"></div>
+    <form class="compose" id="composeForm" autocomplete="off">
+      <label for="msg" class="field" style="position:absolute;left:-999px">Your question</label>
+      <input type="text" id="msg" placeholder="Type your question here" maxlength="400">
+      <button class="btn primary" type="submit">Send</button>
+    </form>
+  </div>
+</section>
+
+<!-- COURT STAFF -->
+<section class="view" id="v-court" aria-labelledby="h-court" hidden>
+  <div class="intro">
+    <h1 id="h-court">Court staff view</h1>
+    <p class="lede">A pre-sorted queue built from what litigants choose to share through the assistant.</p>
+  </div>
+  <div class="notice" role="note"><p><strong>Demo data and an open assumption.</strong> The cases below are made up. We assume clerks spend real time chasing missing documents and answering repeat questions. We still need to check that with a clerk. Litigants only appear here if they turn on sharing in My case.</p></div>
+  <div class="stats" id="stats"></div>
+  <h2>Hearing queue</h2>
+  <div class="tablewrap">
+    <table>
+      <caption class="hint" style="text-align:left;padding:.6rem .8rem;caption-side:top">Sorted by hearing date, then by how many documents are still missing. Select a row to open the packet.</caption>
+      <thead><tr><th scope="col">Litigant</th><th scope="col">Hearing</th><th scope="col">Packet ready</th><th scope="col">Flags</th><th scope="col"><span style="position:absolute;left:-999px">Open</span></th></tr></thead>
+      <tbody id="queue"></tbody>
+    </table>
+  </div>
+  <div id="packet" class="panel" style="margin-top:1rem" aria-live="polite"></div>
+</section>
+
+</div>
+</main>
+
+<footer class="site" id="sources">
+  <div class="wrap">
+    <strong>Sample sources used in this prototype</strong>
+    <ol id="srcList"></ol>
+    <p>Phone numbers and local contacts for the court would be added by the court. Nothing here replaces advice from a lawyer.</p>
+  </div>
+</footer>
+
+<div id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- helpers ---------- */
+var $=function(s,r){return (r||document).querySelector(s)};
+var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
+var TODAY=new Date();TODAY.setHours(0,0,0,0);
+var fmt=function(d){return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})};
+var parseDate=function(s){var p=s.split('-').map(Number);return new Date(p[0],p[1]-1,p[2])};
+var daysUntil=function(s){return Math.round((parseDate(s)-TODAY)/86400000)};
+var addDays=function(d,n){var x=new Date(d);x.setDate(x.getDate()+n);return x};
+function toast(t){var el=$('#toast');el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(function(){el.hidden=true},2600)}
+
+/* ---------- sample approved sources ---------- */
+var SOURCES={
+  S1:{t:'Allen Superior Court, New Eviction Protocol memo (October 10, 2022)',u:'https://allencountyclerk.in.gov/wp-content/uploads/2022/10/New-Eviction-Protocol-Memo-10.10.22.pdf'},
+  S2:{t:'Public Allen County eviction dockets (sample cases, 2023 and 2024)'},
+  S3:{t:'Class scenario facts: Indiana 10-day notice, possession decided first, Allen County settlement conference'},
+  S4:{t:'Indiana Small Claims Rule 10(B): default judgment when a defendant does not appear'}
+};
+function chips(list){return (list||[]).map(function(k){return '<a class="src" href="#sources" title="'+esc(SOURCES[k].t)+'" aria-label="Source '+k+': '+esc(SOURCES[k].t)+'">'+k+'</a>'}).join('')}
+$('#srcList').innerHTML=Object.keys(SOURCES).map(function(k){var s=SOURCES[k];return '<li><strong>'+k+'.</strong> '+esc(s.t)+(s.u?' (<a href="'+s.u+'">open</a>)':'')+'</li>'}).join('');
+
+/* ---------- state ---------- */
+var state={signedIn:false,name:'',phone:'',situation:'',hearing:'',unknownDate:false,barriers:[],docs:{},share:false,step:1,reviewed:{}};
+var DOCS=[
+  {id:'lease',label:'My lease'},
+  {id:'ledger',label:'Rent payment records or ledger'},
+  {id:'notice',label:'The 10-day notice'},
+  {id:'papers',label:'Court papers (notice of claim and summons)'},
+  {id:'income',label:'Proof my income changed (pay stubs, a cut schedule)'},
+  {id:'id',label:'Photo ID'},
+  {id:'msgs',label:'Texts or emails with my landlord'},
+  {id:'receipts',label:'Receipts for any payments I made'}
+];
+var BARRIERS=[
+  {id:'work',label:'I can’t get time off work'},
+  {id:'ride',label:'I don’t have a ride'},
+  {id:'care',label:'I need childcare or care for someone'},
+  {id:'access',label:'I need an accommodation (for example mobility, vision, or hearing)'},
+  {id:'lang',label:'I need help in another language'},
+  {id:'phone',label:'I don’t have reliable phone or internet'},
+  {id:'confused',label:'The papers confuse me'}
+];
+var TIPS={
+  work:'Hearings are in person. Ask the court clerk how to ask for a different date, and do it as early as you can. The assistant can draft a short note for your employer.',
+  ride:'Plan your trip to the courthouse ahead of time, and check the location printed on your papers. If you can’t get there, tell the clerk before the hearing.',
+  care:'Plan care for the hearing day. Ask the court ahead of time what is allowed in the courtroom.',
+  access:'Courts are generally required to provide reasonable accommodations. Tell the clerk early what you need.',
+  lang:'Ask the clerk early about an interpreter.',
+  phone:'A public library computer works. You can also call the clerk for your hearing date. Write the date on paper.',
+  confused:'Ask the assistant to explain each paper, or bring them to legal aid or court self-help staff.'
+};
+var SITUATIONS={
+  notice:'I got a 10-day notice from my landlord',
+  papers:'I got court papers (a notice of claim or summons)',
+  judgment:'The court already made a decision in my case',
+  unsure:'I’m not sure what I got'
+};
+
+/* ---------- learn content ---------- */
+var TOPICS=[
+ {id:'notice',q:'I got a 10-day notice taped to my door',tags:'notice 10 day taped door landlord rent pay',src:['S3'],a:[
+  'A 10-day notice is a message from your landlord. It is not a court paper, and it does not mean a judge has decided anything.',
+  'In Indiana, paying what you owe within the 10 days stops the lease from ending.',
+  'If the 10 days pass, your landlord may file a case with the court. That is when court papers come.']},
+ {id:'papers',q:'I got court papers. What are they?',tags:'court papers summons notice of claim served posted mailed hearing date',src:['S2'],a:[
+  'If your landlord files a case, the court issues a notice of claim and a summons. In Allen County, the papers can be posted on your door and mailed to your home.',
+  'Find the hearing date on the papers first. It is the most important thing on them.',
+  'Keep every paper. You will want them at the hearing.']},
+ {id:'hearing',q:'What happens at my first hearing?',tags:'hearing first initial court what happens settlement conference possession facilitator',src:['S1','S3'],a:[
+  'Every eviction case gets an initial hearing, held in person. A Small Claims Eviction Diversion Facilitator runs it.',
+  'At that hearing, the possible results include dismissal, a default judgment, or entering the Eviction Diversion Program.',
+  'Whether you can stay in the home (possession) is decided first. Money owed is decided at a later hearing. Allen County sets every eviction for a settlement conference.']},
+ {id:'diversion',q:'What is the Eviction Diversion Program?',tags:'diversion program facilitator agree status hearing landlord decline',src:['S1','S2'],a:[
+  'If both sides appear, the facilitator explains the program. If both agree, the facilitator prepares an order with follow-up hearing dates.',
+  'It needs both sides. Court dockets show cases where the landlord declined it.',
+  'It only works if you attend the hearing.']},
+ {id:'miss',q:'What if I miss the hearing?',tags:'miss skip default judgment not appear absent no show',src:['S4','S2'],a:[
+  'If a tenant does not appear, the court can enter a default judgment. That means the judge can decide the case without hearing from you.',
+  'Court dockets show a paper notice mailed to the tenant after a default judgment.',
+  'If you truly can’t attend, tell the clerk before the hearing. Use the assistant to find out what to ask.']},
+ {id:'help',q:'Where can I get free help?',tags:'free help lawyer legal aid attorney indiana legal help self-help',src:[],a:[
+  'Indiana Legal Help (indianalegalhelp.org) has guides and a guided interview for common legal problems. Legal aid groups may be able to help for free.',
+  'The court clerk can tell you what self-help options exist locally. [Court phone number and address: to be added by the court.]']},
+ {id:'words',q:'Words you may see',tags:'glossary words definitions plaintiff defendant docket',src:['S1'],gloss:true,a:[]}
+];
+var GLOSS=[
+ ['Landlord','The person or company you rent from. In court, also called the plaintiff.'],
+ ['Tenant','You. In court, also called the defendant.'],
+ ['Notice of claim','The paper that starts the court case.'],
+ ['Summons','The court’s notice telling you to appear.'],
+ ['Initial hearing','The first in-person hearing in an eviction case.'],
+ ['Possession','Who gets to live in the home.'],
+ ['Default judgment','A decision made without hearing from you because you did not appear.'],
+ ['Diversion','A program that aims to settle the case without an eviction.'],
+ ['Facilitator','The court staff member who runs the initial hearing and explains diversion.'],
+ ['Docket','The court’s public list of what has happened in a case.']
+];
+function renderTopics(filter){
+  var f=(filter||'').toLowerCase().trim();
+  var list=TOPICS.filter(function(t){return !f||(t.q+' '+t.tags+' '+t.a.join(' ')).toLowerCase().indexOf(f)>-1});
+  $('#topics').innerHTML=list.length?list.map(function(t){
+    var body=t.gloss?'<dl class="gloss">'+GLOSS.map(function(g){return '<dt>'+g[0]+'</dt><dd>'+g[1]+'</dd>'}).join('')+'</dl>':t.a.map(function(p){return '<p>'+esc(p)+'</p>'}).join('');
+    return '<details class="topic"'+(f&&list.length===1?' open':'')+'><summary>'+esc(t.q)+'</summary><div class="body" data-speak>'+body+
+      '<div class="acts"><button class="btn small quiet listen" type="button">Listen</button> '+(t.src.length?'Sources:'+chips(t.src):'')+'</div></div></details>';
+  }).join(''):'<div class="panel"><p><strong>No match.</strong> Try a different word, or ask the assistant.</p><a class="btn" href="#ask" style="text-decoration:none;display:inline-flex;align-items:center">Ask the assistant</a></div>';
+}
+$('#q').addEventListener('input',function(e){renderTopics(e.target.value)});
+
+/* ---------- case wizard ---------- */
+function docCount(){return DOCS.filter(function(d){return state.docs[d.id]}).length}
+function opt(type,name,val,checked,label){
+  return '<label class="opt"><input type="'+type+'" name="'+name+'" value="'+val+'"'+(checked?' checked':'')+'><span>'+label+'</span></label>';
+}
+function renderCase(){
+  var el=$('#caseBody');
+  if(!state.signedIn){
+    el.innerHTML='<div class="panel" style="max-width:34rem"><h2>Sign in to save your case</h2>'+
+      '<p>Use your phone number. No password. Your information stays private to you.</p>'+
+      '<form id="signForm"><label class="field" for="nm">First name (optional)</label><input id="nm" type="text" placeholder="For example: Jordan" autocomplete="given-name" style="margin-bottom:.8rem">'+
+      '<label class="field" for="ph">Mobile number</label><input id="ph" type="tel" inputmode="tel" placeholder="(260) 555-0123" autocomplete="tel">'+
+      '<div id="codeBox" hidden style="margin-top:.8rem"><label class="field" for="cd">Code from the text message</label><input id="cd" type="text" inputmode="numeric" maxlength="6" placeholder="4 digits"><p class="hint">Prototype only: type any 4 digits.</p></div>'+
+      '<div class="row"><button class="btn primary" type="submit" id="signBtn">Send me a code</button></div></form></div>'+
+      '<div class="notice info" style="max-width:34rem;margin-top:1rem" role="note"><p><strong>Presenting? Skip sign-in.</strong> Load a sample tenant, Jordan, with a hearing coming up, a few things in the way, and some documents already gathered.</p><p><button class="btn small primary" type="button" id="loadDemo" style="margin-top:.5rem">Load Jordan’s demo case</button></p></div>';
+    $('#loadDemo').addEventListener('click',loadDemo);
+    $('#signForm').addEventListener('submit',function(e){
+      e.preventDefault();
+      if($('#codeBox').hidden){
+        if($('#ph').value.replace(/\D/g,'').length<7){toast('Enter your phone number first');$('#ph').focus();return}
+        $('#codeBox').hidden=false;$('#signBtn').textContent='Check code';$('#cd').focus();toast('Code sent (simulated)');
+      }else{
+        if($('#cd').value.replace(/\D/g,'').length<4){toast('Enter the 4-digit code');$('#cd').focus();return}
+        state.signedIn=true;state.name=$('#nm').value.trim()||'Jordan';state.phone=$('#ph').value;state.step=1;renderCase();
+      }
+    });
+    return;
+  }
+  var s=state.step,total=4,bar='';
+  if(s<=total){bar='<div class="progress" aria-hidden="true">'+[1,2,3,4].map(function(n){return '<i class="'+(n<=s?'on':'')+'"></i>'}).join('')+'</div>'}
+  var h='<div class="panel" style="max-width:44rem">';
+  if(s===1){
+    h+=bar+'<p class="hint">Step 1 of 4</p><form id="stepForm"><fieldset><legend>What did you get?</legend>'+
+      Object.keys(SITUATIONS).map(function(k){return opt('radio','sit',k,state.situation===k,SITUATIONS[k])}).join('')+'</fieldset>'+
+      '<div class="row"><button class="btn primary" type="submit">Next</button></div></form>';
+  }else if(s===2){
+    h+=bar+'<p class="hint">Step 2 of 4</p><form id="stepForm"><fieldset><legend>When is your hearing?</legend>';
+    if(state.situation==='notice'){
+      h+='<p>You don’t have a court date yet. A hearing date appears only if your landlord files a case. If court papers come, add the date here.</p>';
+    }else{
+      h+='<p class="hint">The date is printed on your court papers. If you have the papers, look for a date and time.</p>'+
+        '<label class="field" for="hd">Hearing date</label><input id="hd" type="date" value="'+esc(state.hearing)+'">'+
+        '<label class="opt" style="margin-top:.7rem"><input type="checkbox" id="unk"'+(state.unknownDate?' checked':'')+'><span>I can’t find the date</span></label>';
+    }
+    h+='</fieldset><div class="row"><button class="btn" type="button" data-back>Back</button><button class="btn primary" type="submit">Next</button></div></form>';
+  }else if(s===3){
+    h+=bar+'<p class="hint">Step 3 of 4</p><form id="stepForm"><fieldset><legend>What might get in the way of going to court?</legend><p class="hint">Pick any that apply, or none. This only helps us give you useful tips.</p>'+
+      BARRIERS.map(function(b){return opt('checkbox','bar',b.id,state.barriers.indexOf(b.id)>-1,esc(b.label))}).join('')+'</fieldset>'+
+      '<div class="row"><button class="btn" type="button" data-back>Back</button><button class="btn primary" type="submit">Next</button></div></form>';
+  }else if(s===4){
+    h+=bar+'<p class="hint">Step 4 of 4</p><form id="stepForm"><fieldset><legend>Which of these do you already have?</legend><p class="hint">Check what you have. Gathering these early can make the hearing less stressful.</p>'+
+      DOCS.map(function(d){return opt('checkbox','doc',d.id,!!state.docs[d.id],esc(d.label))}).join('')+'</fieldset>'+
+      '<fieldset><legend>Share with the court clerk? (optional)</legend><label class="opt"><input type="checkbox" id="shr"'+(state.share?' checked':'')+'><span>Let the clerk’s office see my hearing date, which documents I have, and what might get in my way, so they can help me prepare. I can turn this off anytime. Nothing else is shared.</span></label></fieldset>'+
+      '<div class="row"><button class="btn" type="button" data-back>Back</button><button class="btn primary" type="submit">See my plan</button></div></form>';
+  }else{
+    h+=planHTML();
+  }
+  h+='</div>';
+  el.innerHTML=h;
+  var f=$('#stepForm');
+  if(f){
+    f.addEventListener('submit',function(e){
+      e.preventDefault();
+      if(s===1){var r=f.querySelector('input[name=sit]:checked');if(!r){toast('Pick one to continue');return}state.situation=r.value}
+      if(s===2&&state.situation!=='notice'){state.hearing=$('#hd').value;state.unknownDate=$('#unk').checked}
+      if(s===3){state.barriers=$$('input[name=bar]:checked',f).map(function(i){return i.value})}
+      if(s===4){state.docs={};$$('input[name=doc]:checked',f).forEach(function(i){state.docs[i.value]=true});state.share=$('#shr').checked}
+      state.step=s+1;renderCase();window.scrollTo(0,0);
+    });
+    var b=$('[data-back]',f);if(b)b.addEventListener('click',function(){state.step=s-1;renderCase()});
+  }
+  $$('[data-act]').forEach(function(b){b.addEventListener('click',function(){
+    var a=b.getAttribute('data-act');
+    if(a==='edit'){state.step=1;renderCase();window.scrollTo(0,0)}
+    if(a==='ask'){location.hash='#ask'}
+    if(a==='share'){state.share=!state.share;renderCase();toast(state.share?'Sharing is on':'Sharing is off')}
+    if(a==='signout'){state.signedIn=false;renderCase()}
+  })});
+  var first=$('legend',el)||$('h2',el);
+}
+function isoIn(n){var d=addDays(TODAY,n);while(d.getDay()===0||d.getDay()===6)d=addDays(d,1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function loadDemo(){
+  state.signedIn=true;state.name='Jordan';state.phone='(260) 555-0123';
+  state.situation='papers';state.hearing=isoIn(6);state.unknownDate=false;
+  state.barriers=['work','ride','confused'];
+  state.docs={notice:true,papers:true,lease:true,id:true};
+  state.share=true;state.step=5;log=[];selected=null;
+  renderCase();
+  if(!$('#v-ask').hidden)renderAsk();
+  toast('Jordan’s demo case loaded, sharing with the clerk is on');
+}
+function planHTML(){
+  var h='<h2>Your plan, '+esc(state.name)+'</h2>';
+  var sit=SITUATIONS[state.situation]||'You haven’t told us yet';
+  h+='<p><strong>Where you are:</strong> '+esc(sit)+'.</p>';
+  if(state.hearing){
+    var n=daysUntil(state.hearing),d=parseDate(state.hearing);
+    var when=n>0?n+' day'+(n===1?'':'s')+' away':n===0?'today':'passed';
+    h+='<div class="stub"><div class="l"><h3>Your hearing</h3><p>'+fmt(d)+'. '+(n<0?'This date has passed. Contact the clerk right away to ask about the status of your case.':'It is held in person. Check the time and location on your papers.')+'</p></div>'+
+       '<div class="r"><span class="big">'+(n<0?'Past':n===0?'Today':n)+'</span><span class="sm">'+(n>0?(n===1?'day to go':'days to go'):'')+'</span></div></div>';
+    if(n>=0){
+      var rem=[[-7,'One week before'],[-1,'The day before'],[0,'The morning of']].map(function(r){return [addDays(d,r[0]),r[1]]}).filter(function(r){return r[0]>=TODAY});
+      h+='<h3>Your reminders (simulated)</h3><ul class="clean">'+rem.map(function(r){return '<li>'+r[1]+': '+fmt(r[0])+', by text'+'</li>'}).join('')+'</ul>';
+    }
+  }else if(state.situation==='notice'){
+    h+='<p>You don’t have a hearing yet. In Indiana, paying what you owe within the 10 days stops the lease from ending'+chips(['S3'])+'. Free legal help can talk through your options.</p>';
+  }else{
+    h+='<div class="notice bad" role="note"><p><strong>No hearing date saved.</strong> Look on your court papers for a date and time, or call the clerk. Missing a hearing can lead to a default judgment'+chips(['S4'])+'.</p></div>';
+  }
+  if(state.barriers.length){
+    h+='<h3>Help for what’s in your way</h3><ul class="clean">'+state.barriers.map(function(b){var x=BARRIERS.filter(function(z){return z.id===b})[0];return '<li><strong>'+esc(x.label)+'.</strong> '+esc(TIPS[b])+'</li>'}).join('')+'</ul>';
+  }
+  h+='<h3>Your documents ('+docCount()+' of '+DOCS.length+')</h3><ul class="checks">'+DOCS.map(function(d){var y=state.docs[d.id];return '<li><span class="dot '+(y?'y':'n')+'" aria-hidden="true">'+(y?'✓':'')+'</span><span>'+esc(d.label)+' <span class="tag '+(y?'ok':'warn')+'">'+(y?'I have it':'Still need')+'</span></span></li>'}).join('')+'</ul>';
+  h+='<div class="notice '+(state.share?'ok':'info')+'" role="note"><p><strong>Sharing with the court clerk: '+(state.share?'On':'Off')+'.</strong> '+(state.share?'The clerk’s office can see your hearing date, your document checklist, and what might get in your way.':'Nobody at the court can see your information.')+'</p></div>';
+  h+='<div class="row"><button class="btn primary" data-act="ask" type="button">Ask the assistant a question</button><button class="btn" data-act="share" type="button">'+(state.share?'Stop sharing':'Share with the clerk')+'</button><button class="btn quiet" data-act="edit" type="button">Change my answers</button><button class="btn quiet" data-act="signout" type="button">Sign out</button></div>';
+  return h;
+}
+
+/* ---------- assistant ---------- */
+var log=[];
+var SUGGEST=['What does my notice mean?','What happens at my hearing?','What if I miss it?','Where can I get free help?','I can’t get off work','I don’t have a ride','Help me gather my documents','What’s next for me?','Should I just ignore this?'];
+function ctx(){
+  if(state.hearing){var n=daysUntil(state.hearing);if(n>0)return 'Your hearing is on '+fmt(parseDate(state.hearing))+', '+n+' day'+(n===1?'':'s')+' away.';if(n===0)return 'Your hearing is today.';return 'The hearing date you saved, '+fmt(parseDate(state.hearing))+', has passed. Contact the clerk about the status of your case.'}
+  return '';
+}
+function personalBarriers(){
+  if(!state.signedIn||!state.barriers.length)return '';
+  return 'You also told us about: '+state.barriers.map(function(b){return short(b).toLowerCase()}).join(', ')+'. Ask me about any of those and I’ll go through what the court sources say.';
+}
+var DOCKEYS=[['lease',/lease/],['ledger',/ledger|payment record/],['notice',/10.?day|notice/],['papers',/summons|court papers|papers|notice of claim/],['income',/pay ?stub|income|schedule/],['id',/\b(id|license)\b/],['msgs',/text|email/],['receipts',/receipt/]];
+function reply(raw){
+  var q=raw.toLowerCase(),p=[],src=[],note=null,c=ctx();
+  if(/(suicid|want to die|kill myself|hopeless|end it all)/.test(q)){
+    return {p:['I’m sorry things feel this heavy. If you are thinking about hurting yourself, you can call or text 988 (Suicide & Crisis Lifeline) any time, day or night.','I can still help with your court questions whenever you’re ready.'],src:[]};
+  }
+  if(/(unsafe|afraid of|scared of|hurt me|abuse|violen|threaten|in danger|hit me|beat me)/.test(q)){
+    return {p:['If you are in danger right now, call 911.','The National Domestic Violence Hotline is open 24/7 at 1-800-799-7233, or text START to 88788. They can help with safety planning.','This assistant can’t help with safety planning, but tell the court clerk about safety concerns before your hearing.'],src:[]};
+  }
+  var have=q.match(/i (?:have|got|found) (?:my |the |a )?(.+)/);
+  if(have){
+    var hit=DOCKEYS.filter(function(k){return k[1].test(have[1])});
+    if(hit.length){hit.forEach(function(k){state.docs[k[0]]=true});
+      var miss=DOCS.filter(function(d){return !state.docs[d.id]});
+      p.push('Got it. I checked that off your list ('+docCount()+' of '+DOCS.length+' documents).');
+      if(miss.length)p.push('Still needed: '+miss.map(function(d){return d.label}).join('; ')+'.');
+      p.push(state.share?'Your checklist is shared with the clerk’s office, so they can see it’s getting more complete.':'Your checklist is private. You can choose to share it in My case.');
+      return {p:p,src:[]};}
+  }
+  if(/(should i|what should i do|will i win|will the judge|can they (evict|kick)|am i going to|do i have a case|tell me what to do|ignore)/.test(q)){
+    p.push('I can’t tell you what to do in your case or predict what a judge will decide. That would be legal advice, and I’m not a lawyer.');
+    p.push('What I can say from the court sources: if a tenant does not appear, the court can enter a default judgment, and the diversion program only works if you attend the hearing.');
+    p.push('Free legal help can talk about your situation. Questions you could ask them: Can I still stop this by paying? What are my options at the hearing? What should I bring?');
+    if(c)p.push(c);
+    return {p:p,src:['S4','S1']};
+  }
+  if(/(next step|what.s next|what now|where do i start|get ready|prepare|do first)/.test(q)){
+    var st=[],miss2=DOCS.filter(function(d){return !state.docs[d.id]});
+    if(state.hearing)st.push(ctx()+' Put it in your calendar and keep your court papers with you.');
+    else st.push('Find the hearing date on your court papers, or call the clerk, then add it in My case.');
+    if(miss2.length)st.push('Gather the documents you still need: '+miss2.map(function(d){return d.label}).join('; ')+'.');
+    if(state.barriers.length)st.push('Deal with what is in the way early: '+state.barriers.map(function(b){return short(b).toLowerCase()}).join(', ')+'. If you can’t solve one, tell the clerk before the hearing.');
+    st.push('Talk to free legal help about your own situation. I can explain papers and rules, but I can’t advise you.');
+    p.push('These are preparation steps, not legal advice. Here is a list based on your case:');
+    st.forEach(function(x,i){p.push((i+1)+'. '+x)});
+    return {p:p,src:['S1','S4']};
+  }
+  if(/(document|gather|bring|checklist|paperwork|what do i need)/.test(q)){
+    var haveL=DOCS.filter(function(d){return state.docs[d.id]}),missL=DOCS.filter(function(d){return !state.docs[d.id]});
+    p.push('Here is where your documents stand ('+haveL.length+' of '+DOCS.length+').');
+    if(haveL.length)p.push('You have: '+haveL.map(function(d){return d.label}).join('; ')+'.');
+    p.push('Still to gather: '+(missL.length?missL.map(function(d){return d.label}).join('; '):'nothing, you’re set')+'.');
+    p.push('Tell me when you find one, for example “I have my lease,” and I’ll check it off. '+(state.share?'The clerk’s office sees your checklist, so they can focus on what is still missing.':'You can share the checklist with the clerk in My case so they can prepare.'));
+    return {p:p,src:[]};
+  }
+  if(/(employer|boss|work note|note for|letter)/.test(q)||/(can.t|cannot|unable).*(off work|time off)|off work|time off/.test(q)){
+    var dt=state.hearing?fmt(parseDate(state.hearing)):'[hearing date]';
+    p.push('Hearings are in person. Ask the court clerk how to ask for a different date, and do it as early as you can. Here is a short note you can give your employer. Edit it before you use it.');
+    note='Hello [manager’s name],\n\nI have a required in-person court appearance on '+dt+'. I would like to request time off for that day. I can share proof of the court date if you need it.\n\nThank you,\n'+(state.name||'[your name]');
+    if(c)p.push(c);
+    return {p:p,src:['S1'],note:note};
+  }
+  if(/\b(ride|transport|transportation|bus|car|get there|how do i get)\b/.test(q)){
+    p.push('The hearing is held in person at the location printed on your court papers. Plan your trip ahead of time. If you can’t get there, tell the clerk before the hearing instead of simply not going, because a missed hearing can lead to a default judgment.');
+    if(c)p.push(c);
+    return {p:p,src:['S1','S4']};
+  }
+  if(/(10.?day|notice|taped|door)/.test(q)&&!/court papers/.test(q)){
+    p.push('A 10-day notice is a message from your landlord. It isn’t a court paper, and it doesn’t mean a judge has decided anything.');
+    p.push('In Indiana, paying what you owe within the 10 days stops the lease from ending. If the 10 days pass, your landlord may file a case, and then court papers come.');
+    if(state.situation==='notice')p.push('You told us you got a 10-day notice, so you may not have a hearing date yet.');
+    return {p:p,src:['S3']};
+  }
+  if(/(summons|court papers|papers|served|notice of claim|posted)/.test(q)){
+    p.push('A notice of claim and summons start the court case. In Allen County they can be posted on your door and mailed to you. Find the hearing date on them first.');
+    if(c)p.push(c);
+    return {p:p,src:['S2']};
+  }
+  if(/(miss|skip|don.t go|not go|no.?show|default|not appear|won.t go)/.test(q)){
+    p.push('If a tenant does not appear, the court can enter a default judgment, which means the judge can decide without hearing from you. Court dockets show a paper notice mailed to the tenant afterward.');
+    p.push('If you can’t attend, tell the clerk before the hearing.');
+    if(c)p.push(c);
+    var pb2=personalBarriers();if(pb2)p.push(pb2);
+    return {p:p,src:['S4','S2']};
+  }
+  if(/(diversion|program)/.test(q)){
+    p.push('At the initial hearing, if both sides appear, the facilitator explains the Eviction Diversion Program. If both agree, the facilitator prepares an order with follow-up hearing dates. Court dockets show cases where the landlord declined it, so it isn’t guaranteed.');
+    if(c)p.push(c);
+    return {p:p,src:['S1','S2']};
+  }
+  if(/(hearing|court date|what happens|settlement|judge|facilitator|first)/.test(q)){
+    p.push('Every eviction case gets an initial hearing, held in person and run by a Small Claims Eviction Diversion Facilitator. Possible results include dismissal, a default judgment, or entering the diversion program.');
+    p.push('Whether you can stay in the home is decided first. Money owed is decided at a later hearing. Allen County sets every eviction for a settlement conference.');
+    if(c)p.push(c);
+    var pb=personalBarriers();if(pb)p.push(pb);
+    return {p:p,src:['S1','S3']};
+  }
+  if(/(free help|lawyer|attorney|legal aid|where can i)/.test(q)){
+    p.push('Indiana Legal Help (indianalegalhelp.org) has guides and a guided interview. Legal aid groups may help for free. The court clerk can tell you about local self-help options. [Court contact details: to be added by the court.]');
+    return {p:p,src:[]};
+  }
+  return {p:['I don’t have an answer to that in the approved court sources, so I don’t want to guess.','The court clerk or free legal help can answer it. You can also try the Learn page, or ask about notices, court papers, the hearing, missing court, or free help.'],src:[]};
+}
+function addMsg(role,text,extra){
+  log.push({role:role,text:text,extra:extra||{}});
+  renderLog();
+}
+function renderLog(){
+  var el=$('#log');
+  el.innerHTML=log.map(function(m){
+    if(m.role==='me')return '<div class="msg me"><div class="who">You</div><p>'+esc(m.text)+'</p></div>';
+    var paras=m.extra.p.map(function(x){return '<p>'+esc(x)+'</p>'}).join('');
+    var note=m.extra.note?'<pre>'+esc(m.extra.note)+'</pre>':'';
+    var src=(m.extra.src&&m.extra.src.length)?'<span>Sources:'+chips(m.extra.src)+'</span>':'';
+    return '<div class="msg bot" data-speak><div class="who">Assistant</div>'+paras+note+'<div class="acts"><button class="btn small quiet listen" type="button">Listen</button>'+src+'</div></div>';
+  }).join('');
+  el.scrollTop=el.scrollHeight;
+}
+function greet(){
+  var p=['Hi'+(state.name?', '+state.name:'')+'. I explain court papers and rules in plain English, using only sample court sources. I can’t give legal advice.'];
+  if(state.signedIn&&state.situation)p.push('I have what you shared in My case, so my answers fit your situation. '+ctx()+(state.barriers.length?' I also see you flagged: '+state.barriers.map(function(b){return short(b).toLowerCase()}).join(', ')+'.':''));
+  else p.push('Tell me what you got, or add your case in My case so my answers fit you.');
+  log=[{role:'bot',text:'',extra:{p:p,src:[]}}];
+}
+function renderAsk(){
+  if(!log.length)greet();
+  renderLog();
+  $('#chips').innerHTML=SUGGEST.map(function(s){return '<button class="btn small quiet" type="button" data-q="'+esc(s)+'">'+esc(s)+'</button>'}).join('');
+  $$('#chips [data-q], #demoScript [data-q]').forEach(function(b){b.onclick=function(){ask(b.getAttribute('data-q'))}});
+  var ld=$('#loadDemo2');if(ld)ld.onclick=loadDemo;
+}
+function ask(t){
+  t=t.trim();if(!t)return;
+  addMsg('me',t);
+  var r=reply(t);
+  addMsg('bot','',r);
+}
+$('#composeForm').addEventListener('submit',function(e){e.preventDefault();var i=$('#msg');ask(i.value);i.value='';i.focus()});
+
+/* ---------- court staff ---------- */
+function demoCases(){
+  var all=DOCS.map(function(d){return d.id});
+  var iso=function(n){var d=addDays(TODAY,n);while(d.getDay()===0||d.getDay()===6)d=addDays(d,1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+  return [
+    {id:'a',name:'T. Alvarez (demo)',hearing:iso(3),docs:['lease','ledger','notice','papers','id','income','msgs'],barriers:['ride']},
+    {id:'b',name:'R. Whitfield (demo)',hearing:iso(6),docs:['papers','notice'],barriers:['work','confused']},
+    {id:'c',name:'M. Okafor (demo)',hearing:iso(12),docs:all.slice(),barriers:[]},
+    {id:'d',name:'S. Lindqvist (demo)',hearing:iso(5),docs:['lease','papers','id','ledger','income'],barriers:['access','lang']}
+  ];
+}
+var DEMO=demoCases();
+var selected=null;
+function queueList(){
+  var list=DEMO.slice();
+  if(state.signedIn&&state.share&&state.hearing){
+    list.push({id:'me',name:(state.name||'Jordan')+' (you, shared)',hearing:state.hearing,docs:DOCS.filter(function(d){return state.docs[d.id]}).map(function(d){return d.id}),barriers:state.barriers.slice(),mine:true});
+  }
+  return list.map(function(c){c.days=daysUntil(c.hearing);c.ready=Math.round(c.docs.length/DOCS.length*100);
+    var risk=c.barriers.filter(function(b){return ['work','ride','phone','care','access','lang'].indexOf(b)>-1}).length>0;
+    c.attention=(risk&&c.days<=7&&c.ready<75)||c.ready<50;return c}).sort(function(a,b){return a.days-b.days||a.ready-b.ready});
+}
+function flags(c){
+  var f=[];
+  if(c.attention)f.push('<span class="tag bad">Reach out before hearing</span>');
+  c.barriers.forEach(function(b){var x=BARRIERS.filter(function(z){return z.id===b})[0];f.push('<span class="tag warn">'+esc(short(x.id))+'</span>')});
+  if(!f.length)f.push('<span class="tag ok">None</span>');
+  return f.join(' ');
+}
+function short(id){return {work:'Work conflict',ride:'No ride',care:'Care needs',access:'Accommodation',lang:'Interpreter',phone:'No phone or internet',confused:'Needs explaining'}[id]}
+function renderCourt(){
+  var list=queueList();
+  var ready=list.filter(function(c){return c.ready>=75}).length,att=list.filter(function(c){return c.attention}).length;
+  $('#stats').innerHTML='<div class="stat"><b>'+list.length+'</b>Cases in queue</div><div class="stat"><b>'+ready+'</b>Packets mostly complete</div><div class="stat"><b>'+att+'</b>Need outreach</div>';
+  $('#queue').innerHTML=list.map(function(c){
+    var n=c.days;
+    return '<tr class="'+(selected===c.id?'sel':'')+'"><th scope="row" style="background:transparent">'+esc(c.name)+'</th><td>'+fmt(parseDate(c.hearing))+'<br><span class="hint">'+(n<0?'passed':n===0?'today':'in '+n+' day'+(n===1?'':'s'))+'</span></td>'+
+      '<td><div class="meter" role="img" aria-label="'+c.ready+' percent of documents received"><i style="width:'+c.ready+'%"></i></div>'+c.ready+'%</td><td>'+flags(c)+'</td>'+
+      '<td><button class="btn small" type="button" data-open="'+c.id+'" aria-label="Open packet for '+esc(c.name)+'">Open packet</button></td></tr>';
+  }).join('');
+  $$('#queue [data-open]').forEach(function(b){b.addEventListener('click',function(){selected=b.getAttribute('data-open');renderCourt();var pk=$('#packet');pk.setAttribute('tabindex','-1');pk.focus()})});
+  var c=list.filter(function(x){return x.id===selected})[0];
+  if(!c){$('#packet').innerHTML='<h2>Case packet</h2><p>Select a case to see what the litigant has shared, what is missing, and suggested next steps.</p>';return}
+  var haveIds=c.docs,miss=DOCS.filter(function(d){return haveIds.indexOf(d.id)<0});
+  var route=[];
+  if(c.barriers.indexOf('access')>-1)route.push('Accommodation request: confirm with the court’s accommodation contact.');
+  if(c.barriers.indexOf('lang')>-1)route.push('Schedule an interpreter for the hearing.');
+  if(c.barriers.indexOf('work')>-1||c.barriers.indexOf('ride')>-1||c.barriers.indexOf('care')>-1)route.push('Higher chance of a missed hearing. Consider a reminder call or a rescheduling conversation, per court policy.');
+  if(c.barriers.indexOf('confused')>-1)route.push('Point to the diversion facilitator briefing and free legal help before the hearing.');
+  if(miss.length)route.push('Missing documents are listed in this packet, so staff don’t have to ask the litigant one by one.');
+  if(!route.length)route.push('Packet looks complete. No outreach suggested.');
+  $('#packet').innerHTML='<h2>Packet: '+esc(c.name)+'</h2>'+
+    '<p><span class="tag ok">Shared by the litigant</span> Only the items below were shared. No chat history and no contact details.</p>'+
+    '<div class="grid2"><div><h3>Hearing</h3><p>'+fmt(parseDate(c.hearing))+', '+(c.days<0?'passed':c.days===0?'today':'in '+c.days+' day'+(c.days===1?'':'s'))+'.</p>'+
+    '<h3>Documents the litigant has</h3><ul class="clean">'+(haveIds.length?DOCS.filter(function(d){return haveIds.indexOf(d.id)>-1}).map(function(d){return '<li>'+esc(d.label)+'</li>'}).join(''):'<li>None yet</li>')+'</ul></div>'+
+    '<div><h3>Still missing</h3><ul class="clean">'+(miss.length?miss.map(function(d){return '<li>'+esc(d.label)+'</li>'}).join(''):'<li>Nothing</li>')+'</ul>'+
+    '<h3>Things in the way</h3><p>'+(c.barriers.length?c.barriers.map(function(b){return esc(short(b))}).join(', '):'None reported')+'</p></div></div>'+
+    '<h3>Suggested next steps for staff</h3><ul class="clean">'+route.map(function(r){return '<li>'+esc(r)+'</li>'}).join('')+'</ul>'+
+    '<p class="hint">Suggestions are a starting point. A person at the court decides what happens next. This does not give legal advice to the litigant.</p>'+
+    '<div class="row"><button class="btn primary" type="button" id="markRev">Mark packet reviewed</button><button class="btn" type="button" id="nudge">Queue a reminder text</button></div>'+
+    (state.reviewed[c.id]?'<p style="margin-top:.8rem"><span class="tag ok">Reviewed</span></p>':'');
+  $('#markRev').addEventListener('click',function(){state.reviewed[c.id]=true;renderCourt();toast('Packet marked reviewed')});
+  $('#nudge').addEventListener('click',function(){toast('Reminder text queued (simulated)')});
+}
+
+/* ---------- read aloud ---------- */
+var speaking=false;
+function speak(text){
+  if(!('speechSynthesis' in window)){toast('Listening isn’t supported in this browser');return}
+  window.speechSynthesis.cancel();
+  if(speaking){speaking=false;return}
+  var u=new SpeechSynthesisUtterance(text);u.rate=.95;u.onend=function(){speaking=false};
+  speaking=true;window.speechSynthesis.speak(u);
+}
+document.addEventListener('click',function(e){
+  var b=e.target.closest('.listen');if(!b)return;
+  var host=b.closest('[data-speak]');
+  var t=host?Array.prototype.slice.call(host.querySelectorAll('p,li,dt,dd')).map(function(x){return x.textContent}).join(' '):'';
+  speak(t);
+});
+$('#listenPage').addEventListener('click',function(){
+  var v=$('.view:not([hidden])');var t=v?v.innerText:'';speak(t.slice(0,3000));
+});
+
+/* ---------- display settings ---------- */
+var root=document.documentElement;
+var size=1;
+function setSize(n){size=Math.max(1,Math.min(3,n));if(size===1)root.removeAttribute('data-size');else root.setAttribute('data-size',String(size));
+  $('#sizeDown').disabled=size===1;$('#sizeUp').disabled=size===3}
+$('#sizeUp').addEventListener('click',function(){setSize(size+1)});
+$('#sizeDown').addEventListener('click',function(){setSize(size-1)});
+setSize(1);
+$('#contrastBtn').addEventListener('click',function(){
+  var on=root.getAttribute('data-contrast')==='high';
+  if(on)root.removeAttribute('data-contrast');else root.setAttribute('data-contrast','high');
+  this.setAttribute('aria-pressed',String(!on));
+});
+var dark=false;
+function applyTheme(){root.setAttribute('data-theme',dark?'dark':'light');$('#themeBtn').setAttribute('aria-pressed',String(dark))}
+$('#themeBtn').addEventListener('click',function(){dark=!dark;applyTheme()});
+applyTheme();
+
+/* ---------- routing on the hash ---------- */
+var VIEWS=['learn','my-case','ask','court'];
+function route(){
+  var h=(location.hash||'').replace('#','');
+  if(VIEWS.indexOf(h)<0){
+    if(h&&document.getElementById(h)){document.getElementById(h).scrollIntoView();return}
+    h=$('.view:not([hidden])')?$('.view:not([hidden])').id.replace('v-',''):'learn';
+  }
+  VIEWS.forEach(function(v){$('#v-'+v).hidden=(v!==h)});
+  $$('[data-nav]').forEach(function(a){if(a.getAttribute('data-nav')===h)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
+  if(h==='learn')renderTopics($('#q').value);
+  if(h==='my-case')renderCase();
+  if(h==='ask'){if(log.length===1&&state.signedIn)greet();renderAsk()}
+  if(h==='court')renderCourt();
+  document.title={learn:'Learn',  'my-case':'My case',ask:'Ask the assistant',court:'Court staff view'}[h]+' | Court Navigator (prototype)';
+  window.scrollTo(0,0);
+}
+window.addEventListener('hashchange',route);
+if(!location.hash)history.replaceState(null,'','#learn');
+route();
+})();
+</script>
+</body>
+</html>
