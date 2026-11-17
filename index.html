@@ -94,6 +94,13 @@ main{padding:.5rem 0 3rem}
 .notice.bad{background:var(--danger-soft);border-color:var(--danger)}
 .notice p{margin:0}
 .src{display:inline-block;font-size:.8rem;font-weight:700;padding:0 .45rem;border-radius:6px;background:var(--accent-soft);color:var(--ink);border:1px solid var(--accent);text-decoration:none;margin-left:.25rem;vertical-align:.1em}
+button.src{font-family:inherit;line-height:inherit;cursor:pointer}
+a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.answers{list-style:none;padding:0;margin:0 0 1rem}
+.answers li{display:flex;gap:.8rem;justify-content:space-between;align-items:center;padding:.6rem 0;border-bottom:1px solid var(--line)}
+.answers li:last-child{border-bottom:0}
+.answers .q{font-weight:700;display:block}
+.answers .a{color:var(--muted);display:block}
 .tag{display:inline-block;font-size:.85rem;font-weight:700;padding:.1rem .6rem;border-radius:999px;border:1px solid var(--line);background:var(--surface2)}
 .tag.ok{background:var(--ok-soft);border-color:var(--ok);color:var(--ink)}
 .tag.warn{background:var(--warn-soft);border-color:var(--warn);color:var(--ink)}
@@ -228,6 +235,7 @@ footer ol{padding-left:1.2rem;margin:.4rem 0}
   <div class="intro">
     <h1 id="h-learn">Got court papers or a notice? Start here.</h1>
     <p class="lede">This is the public part. Anyone can read it. No account needed.</p>
+    <div class="row"><a class="btn primary" href="#my-case">Make my plan</a><a class="btn" href="#ask">Ask a question</a></div>
   </div>
   <div class="notice" role="note"><p><strong>This is information, not legal advice.</strong> It explains what court papers and rules say. For advice about your own situation, talk to free legal help.</p></div>
   <div class="search">
@@ -322,7 +330,7 @@ var fmt=function(d){return d.toLocaleDateString('en-US',{weekday:'short',month:'
 var parseDate=function(s){var p=s.split('-').map(Number);return new Date(p[0],p[1]-1,p[2])};
 var daysUntil=function(s){return Math.round((parseDate(s)-TODAY)/86400000)};
 var addDays=function(d,n){var x=new Date(d);x.setDate(x.getDate()+n);return x};
-function toast(t){var el=$('#toast');el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(function(){el.hidden=true},2600)}
+function toast(t,ms){var el=$('#toast');el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(function(){el.hidden=true},ms||2600)}
 
 /* ---------- sample approved sources ---------- */
 var SOURCES={
@@ -331,11 +339,13 @@ var SOURCES={
   S3:{t:'Class scenario facts: Indiana 10-day notice, possession decided first, Allen County settlement conference'},
   S4:{t:'Indiana Small Claims Rule 10(B): default judgment when a defendant does not appear'}
 };
-function chips(list){return (list||[]).map(function(k){return '<a class="src" href="#sources" title="'+esc(SOURCES[k].t)+'" aria-label="Source '+k+': '+esc(SOURCES[k].t)+'">'+k+'</a>'}).join('')}
-$('#srcList').innerHTML=Object.keys(SOURCES).map(function(k){var s=SOURCES[k];return '<li><strong>'+k+'.</strong> '+esc(s.t)+(s.u?' (<a href="'+s.u+'">open</a>)':'')+'</li>'}).join('');
+function chips(list){return (list||[]).map(function(k){var s=SOURCES[k],lbl='Source '+k+': '+s.t;return s.u?'<a class="src" href="'+s.u+'" target="_blank" rel="noopener noreferrer" title="'+esc(s.t)+'" aria-label="'+esc(lbl)+' (opens in a new tab)">'+k+'</a>':'<button type="button" class="src" data-src="'+k+'" title="'+esc(s.t)+'" aria-label="'+esc(lbl)+'">'+k+'</button>'}).join('')}
+$('#srcList').innerHTML=Object.keys(SOURCES).map(function(k){var s=SOURCES[k];return '<li><strong>'+k+'.</strong> '+esc(s.t)+(s.u?' (<a href="'+s.u+'" target="_blank" rel="noopener noreferrer">open</a>)':'')+'</li>'}).join('');
+
+document.addEventListener('click',function(e){var b=e.target.closest('button.src');if(!b)return;var k=b.getAttribute('data-src');toast(k+': '+SOURCES[k].t,6000)});
 
 /* ---------- state ---------- */
-var state={signedIn:false,name:'',phone:'',situation:'',hearing:'',unknownDate:false,barriers:[],docs:{},share:false,step:1,reviewed:{}};
+var state={signedIn:false,name:'',phone:'',situation:'',hearing:'',unknownDate:false,barriers:[],docs:{},share:false,step:1,reviewed:{},editing:false};
 var DOCS=[
   {id:'lease',label:'My lease'},
   {id:'ledger',label:'Rent payment records or ledger'},
@@ -450,7 +460,7 @@ function renderCase(){
     return;
   }
   var s=state.step,total=4,bar='';
-  if(s<=total){bar='<div class="progress" aria-hidden="true">'+[1,2,3,4].map(function(n){return '<i class="'+(n<=s?'on':'')+'"></i>'}).join('')+'</div>'}
+  if(s<=total&&!state.editing){bar='<div class="progress" aria-hidden="true">'+[1,2,3,4].map(function(n){return '<i class="'+(n<=s?'on':'')+'"></i>'}).join('')+'</div>'}
   var h='<div class="panel" style="max-width:44rem">';
   if(s===1){
     h+=bar+'<p class="hint">Step 1 of 4</p><form id="stepForm"><fieldset><legend>What did you get?</legend>'+
@@ -478,6 +488,10 @@ function renderCase(){
   }else{
     h+=planHTML();
   }
+  if(state.editing&&s<=total){
+    h=h.replace(/<p class="hint">Step \d of 4<\/p>/,'<p class="hint">Change this answer. Your other answers stay the same.</p>');
+    h=h.replace(/<div class="row">(?:(?!<div class="row">)[\s\S])*<\/div><\/form>$/,'<div class="row"><button class="btn primary" type="submit">Save and back to my plan</button><button class="btn" type="button" data-cancel>Cancel</button></div></form>');
+  }
   h+='</div>';
   el.innerHTML=h;
   var f=$('#stepForm');
@@ -488,17 +502,19 @@ function renderCase(){
       if(s===2&&state.situation!=='notice'){state.hearing=$('#hd').value;state.unknownDate=$('#unk').checked}
       if(s===3){state.barriers=$$('input[name=bar]:checked',f).map(function(i){return i.value})}
       if(s===4){state.docs={};$$('input[name=doc]:checked',f).forEach(function(i){state.docs[i.value]=true});state.share=$('#shr').checked}
+      if(state.editing){state.editing=false;state.step=5;renderCase();window.scrollTo(0,0);toast('Saved. Your plan is updated');return}
       state.step=s+1;renderCase();window.scrollTo(0,0);
     });
     var b=$('[data-back]',f);if(b)b.addEventListener('click',function(){state.step=s-1;renderCase()});
+    var cx=$('[data-cancel]',f);if(cx)cx.addEventListener('click',function(){state.editing=false;state.step=5;renderCase();window.scrollTo(0,0)});
   }
   $$('[data-act]').forEach(function(b){b.addEventListener('click',function(){
     var a=b.getAttribute('data-act');
-    if(a==='edit'){state.step=1;renderCase();window.scrollTo(0,0)}
     if(a==='ask'){location.hash='#ask'}
     if(a==='share'){state.share=!state.share;renderCase();toast(state.share?'Sharing is on':'Sharing is off')}
-    if(a==='signout'){state.signedIn=false;renderCase()}
+    if(a==='signout'){state.signedIn=false;state.editing=false;renderCase()}
   })});
+  $$('[data-edit]').forEach(function(b){b.addEventListener('click',function(){state.editing=true;state.step=+b.getAttribute('data-edit');renderCase();window.scrollTo(0,0)})});
   var first=$('legend',el)||$('h2',el);
 }
 function isoIn(n){var d=addDays(TODAY,n);while(d.getDay()===0||d.getDay()===6)d=addDays(d,1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
@@ -507,7 +523,7 @@ function loadDemo(){
   state.situation='papers';state.hearing=isoIn(6);state.unknownDate=false;
   state.barriers=['work','ride','confused'];
   state.docs={notice:true,papers:true,lease:true,id:true};
-  state.share=true;state.step=5;log=[];selected=null;
+  state.share=true;state.step=5;state.editing=false;log=[];selected=null;
   renderCase();
   if(!$('#v-ask').hidden)renderAsk();
   toast('Jordan’s demo case loaded, sharing with the clerk is on');
@@ -535,7 +551,14 @@ function planHTML(){
   }
   h+='<h3>Your documents ('+docCount()+' of '+DOCS.length+')</h3><ul class="checks">'+DOCS.map(function(d){var y=state.docs[d.id];return '<li><span class="dot '+(y?'y':'n')+'" aria-hidden="true">'+(y?'✓':'')+'</span><span>'+esc(d.label)+' <span class="tag '+(y?'ok':'warn')+'">'+(y?'I have it':'Still need')+'</span></span></li>'}).join('')+'</ul>';
   h+='<div class="notice '+(state.share?'ok':'info')+'" role="note"><p><strong>Sharing with the court clerk: '+(state.share?'On':'Off')+'.</strong> '+(state.share?'The clerk’s office can see your hearing date, your document checklist, and what might get in your way.':'Nobody at the court can see your information.')+'</p></div>';
-  h+='<div class="row"><button class="btn primary" data-act="ask" type="button">Ask the assistant a question</button><button class="btn" data-act="share" type="button">'+(state.share?'Stop sharing':'Share with the clerk')+'</button><button class="btn quiet" data-act="edit" type="button">Change my answers</button><button class="btn quiet" data-act="signout" type="button">Sign out</button></div>';
+  var ans=[
+    ['What you got',state.situation?SITUATIONS[state.situation]:'Not answered yet',1],
+    ['Hearing date',state.hearing?fmt(parseDate(state.hearing)):(state.situation==='notice'?'No hearing yet':(state.unknownDate?'I can’t find the date':'Not added')),2],
+    ['What might get in the way',state.barriers.length?state.barriers.map(function(b){return BARRIERS.filter(function(z){return z.id===b})[0].label}).join('; '):'Nothing selected',3],
+    ['Documents and sharing',docCount()+' of '+DOCS.length+' documents. Sharing with the clerk: '+(state.share?'On':'Off'),4]
+  ];
+  h+='<h3>Your answers</h3><p class="hint">Change any one answer. You won’t have to answer the others again.</p><ul class="answers">'+ans.map(function(a){return '<li><span><span class="q">'+a[0]+'</span><span class="a">'+esc(a[1])+'</span></span><button class="btn small" type="button" data-edit="'+a[2]+'" aria-label="Change: '+esc(a[0])+'">Change</button></li>'}).join('')+'</ul>';
+  h+='<div class="row"><button class="btn primary" data-act="ask" type="button">Ask the assistant a question</button><button class="btn" data-act="share" type="button">'+(state.share?'Stop sharing':'Share with the clerk')+'</button><button class="btn quiet" data-act="signout" type="button">Sign out</button></div>';
   return h;
 }
 
@@ -553,8 +576,11 @@ function personalBarriers(){
 var DOCKEYS=[['lease',/lease/],['ledger',/ledger|payment record/],['notice',/10.?day|notice/],['papers',/summons|court papers|papers|notice of claim/],['income',/pay ?stub|income|schedule/],['id',/\b(id|license)\b/],['msgs',/text|email/],['receipts',/receipt/]];
 function reply(raw){
   var q=raw.toLowerCase(),p=[],src=[],note=null,c=ctx();
-  if(/(suicid|want to die|kill myself|hopeless|end it all)/.test(q)){
+  if(/(suicid|want to die|kill myself|hopeless|end it all|giving up|can.t do this anymore|cannot do this anymore|no point|can.t go on)/.test(q)){
     return {p:['I’m sorry things feel this heavy. If you are thinking about hurting yourself, you can call or text 988 (Suicide & Crisis Lifeline) any time, day or night.','I can still help with your court questions whenever you’re ready.'],src:[]};
+  }
+  if(/locked (?:me |us )?out|changed the locks|change the locks|lockout|\b(?:water|power|electric|electricity|gas|heat)\b[^.?!]{0,30}(?:shut off|shut-off|shutoff|shut down|cut off|turned off|disconnected)|(?:shut off|shutoff|cut off|turned off|disconnected)[^.?!]{0,30}\b(?:water|power|electric|electricity|gas|heat)\b/.test(q)){
+    return {p:['This sounds urgent. Contact free legal help today and call the court clerk’s office. If you feel unsafe, call 911.'],src:[]};
   }
   if(/(unsafe|afraid of|scared of|hurt me|abuse|violen|threaten|in danger|hit me|beat me)/.test(q)){
     return {p:['If you are in danger right now, call 911.','The National Domestic Violence Hotline is open 24/7 at 1-800-799-7233, or text START to 88788. They can help with safety planning.','This assistant can’t help with safety planning, but tell the court clerk about safety concerns before your hearing.'],src:[]};
@@ -629,6 +655,9 @@ function reply(raw){
     p.push('At the initial hearing, if both sides appear, the facilitator explains the Eviction Diversion Program. If both agree, the facilitator prepares an order with follow-up hearing dates. Court dockets show cases where the landlord declined it, so it isn’t guaranteed.');
     if(c)p.push(c);
     return {p:p,src:['S1','S2']};
+  }
+  if(!state.hearing&&/\b(?:when|what day|what date|what time|which day)\b[^.?!]{0,25}\b(?:hearing|court)\b|\bwhat.?s\b[^.?!]{0,8}\b(?:hearing|court) (?:date|day|time)\b|\bwhat is (?:my |the )?(?:hearing|court) (?:date|day|time)\b/.test(q)){
+    return {p:['Your hearing date is printed on your court papers. Look for a date and time on the summons. Add your case in My case to see a countdown and reminders.'],src:[]};
   }
   if(/(hearing|court date|what happens|settlement|judge|facilitator|first)/.test(q)){
     p.push('Every eviction case gets an initial hearing, held in person and run by a Small Claims Eviction Diversion Facilitator. Possible results include dismissal, a default judgment, or entering the diversion program.');
